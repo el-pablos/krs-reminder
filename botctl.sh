@@ -56,7 +56,7 @@ start_bot() {
 
     echo "🚀 Starting KRS Reminder Bot..."
     cd "$PROJECT_ROOT"
-    PYTHONPATH="$PYTHONPATH" nohup python3 -m krs_reminder.cli >> "$LOGFILE" 2>&1 &
+    PYTHONPATH="$PYTHONPATH" nohup python3 -u -m krs_reminder.cli >> "$LOGFILE" 2>&1 &
     local pid=$!
     echo $pid > "$PIDFILE"
 

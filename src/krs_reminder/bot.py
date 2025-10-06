@@ -1075,6 +1075,20 @@ class KRSReminderBotV2:
                 if command == '/start':
                     print(f"👋 Start command received from {chat_id}")
 
+                    # Try multi-user handler first
+                    if self.multi_user_enabled and self.cmd_handler:
+                        welcome_msg = self.cmd_handler.handle_start(chat_id)
+                        if welcome_msg:
+                            # Multi-user mode: use authentication-aware message
+                            self.send_telegram_message(
+                                welcome_msg,
+                                chat_id=chat_id,
+                                reply_markup=self._create_main_menu_keyboard(),
+                                count_as_reminder=False
+                            )
+                            continue
+
+                    # Fallback to single-user mode
                     # Get VA/VB status for current week
                     now = datetime.datetime.now(self.tz)
                     va_vb_status = self._get_va_vb_status(now)
@@ -1113,6 +1127,18 @@ class KRSReminderBotV2:
                     )
                 elif command == '/stats':
                     print(f"📊 Stats command received from {chat_id}")
+
+                    # Check authentication in multi-user mode
+                    if self.multi_user_enabled and self.auth:
+                        is_logged_in, user, error_msg = self.auth.require_login(chat_id)
+                        if not is_logged_in:
+                            self.send_telegram_message(
+                                error_msg,
+                                chat_id=chat_id,
+                                count_as_reminder=False
+                            )
+                            continue
+
                     stats_msg = self.get_stats_message()
                     self.send_telegram_message(
                         stats_msg,

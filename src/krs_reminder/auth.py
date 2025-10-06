@@ -245,19 +245,32 @@ class AuthManager:
     def require_login(self, telegram_chat_id: int) -> tuple[bool, Optional[Dict], str]:
         """
         Check if user is logged in
-        
+
         Args:
             telegram_chat_id: Telegram chat ID
-            
+
         Returns:
             Tuple of (is_logged_in, user_dict, error_message)
         """
         user = self.get_user_from_session(telegram_chat_id)
-        
+
         if user:
             return (True, user, '')
         else:
             return (False, None, '❌ Anda belum login. Gunakan /login <secret_key>')
+
+    def is_user_authenticated(self, telegram_chat_id: int) -> bool:
+        """
+        Check if user is authenticated (has active session)
+
+        Args:
+            telegram_chat_id: Telegram chat ID
+
+        Returns:
+            True if user has active session, False otherwise
+        """
+        session = self.validate_session(telegram_chat_id)
+        return session is not None
     
     # ============================================================
     # UTILITY FUNCTIONS

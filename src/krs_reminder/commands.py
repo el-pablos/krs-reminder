@@ -17,7 +17,51 @@ class CommandHandler:
     # ============================================================
     # USER COMMANDS
     # ============================================================
-    
+
+    def handle_start(self, chat_id: int) -> str:
+        """Handle /start command - Check authentication status"""
+        if not self.bot.multi_user_enabled:
+            # Single-user mode: show regular welcome
+            return None  # Let bot.py handle single-user welcome
+
+        # Check if user is logged in
+        is_logged_in, user, error_msg = self.auth.require_login(chat_id)
+
+        if is_logged_in:
+            # User is logged in: show welcome with available commands
+            return (
+                f"👋 <b>Selamat Datang, {user['username']}!</b>\n\n"
+                "🎓 <b>KRS Reminder Bot V3</b>\n"
+                "Asisten pintar untuk jadwal kuliahmu\n\n"
+                "━━━━━━━━━━━━━━━━━━━\n\n"
+                "<b>✨ Fitur Utama</b>\n"
+                "  🔔 Reminder otomatis (5j, 3j, 2j, 1j sebelum)\n"
+                "  📅 Jadwal kuliah personal\n"
+                "  ⏰ Notifikasi tepat waktu\n"
+                "  📊 Monitoring real-time\n\n"
+                "━━━━━━━━━━━━━━━━━━━\n\n"
+                "<b>📋 Perintah yang Tersedia:</b>\n"
+                "  /jadwal - Lihat jadwal kuliah\n"
+                "  /stats - Lihat statistik bot\n"
+                "  /logout - Keluar dari akun\n\n"
+                "💡 <b>Gunakan menu di bawah untuk navigasi cepat</b>"
+            )
+        else:
+            # User NOT logged in: show login instructions
+            return (
+                "👋 <b>Selamat datang di KRS Reminder Bot V3!</b>\n\n"
+                "🔒 <b>Anda belum login.</b> Untuk menggunakan bot ini:\n\n"
+                "1️⃣ Hubungi admin untuk membuat akun\n"
+                "2️⃣ Admin akan memberikan <b>secret key</b> kepada Anda\n"
+                "3️⃣ Login dengan command:\n"
+                "     <code>/login &lt;secret_key&gt;</code>\n"
+                "4️⃣ Setelah login, Anda bisa melihat jadwal Anda\n\n"
+                "━━━━━━━━━━━━━━━━━━━\n\n"
+                "📧 <b>Kontak Admin:</b> @el_pablos\n\n"
+                "ℹ️ Bot ini menggunakan sistem multi-user dengan autentikasi "
+                "untuk menjaga privasi jadwal setiap user."
+            )
+
     def handle_login(self, chat_id: int, args: list) -> str:
         """Handle /login <secret_key>"""
         if not self.bot.multi_user_enabled:
@@ -62,7 +106,12 @@ class CommandHandler:
         """Handle /logout"""
         if not self.bot.multi_user_enabled:
             return "❌ Multi-user support tidak aktif"
-        
+
+        # Check if logged in first
+        is_logged_in, user, error_msg = self.auth.require_login(chat_id)
+        if not is_logged_in:
+            return "❌ Anda belum login"
+
         result = self.auth.logout(chat_id)
         if result['success']:
             return "✅ <b>Logout Berhasil!</b>\n\nGunakan /login untuk login kembali"
