@@ -1,4 +1,4 @@
-"""Core bot runtime for the KRS Reminder system - Multi-User Support."""
+"""Core bot runtime for the KRS Reminder system."""
 
 import datetime
 import html
@@ -18,10 +18,6 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 from . import config
-from .database import SupabaseClient
-from .auth import AuthManager
-from .admin import AdminManager
-from .commands import CommandHandler
 
 class KRSReminderBotV2:
     def __init__(self):
@@ -38,22 +34,6 @@ class KRSReminderBotV2:
         self.http_session = requests.Session()
         self.calendar_service = None
         self.calendar_service_expiry: Optional[datetime.datetime] = None
-
-        # Multi-user support
-        try:
-            self.db = SupabaseClient()
-            self.auth = AuthManager(self.db)
-            self.admin = AdminManager(self.db, self.auth, self._get_calendar_service)
-            self.cmd_handler = CommandHandler(self)
-            self.multi_user_enabled = True
-            print("✅ Multi-user support enabled")
-        except Exception as e:
-            print(f"⚠️  Multi-user support disabled: {e}")
-            self.db = None
-            self.auth = None
-            self.admin = None
-            self.cmd_handler = None
-            self.multi_user_enabled = False
 
     def authenticate_google_calendar(self):
         """Autentikasi ke Google Calendar dengan auto-recovery"""
@@ -1121,60 +1101,27 @@ class KRSReminderBotV2:
                     )
                 elif command == '/jadwal':
                     print(f"🗓️ Jadwal command received from {chat_id}")
-
-                    # Try multi-user first
-                    if self.multi_user_enabled and self.cmd_handler:
-                        success, msg, events = self.cmd_handler.handle_jadwal_multiuser(chat_id)
-                        if success:
-                            # Use events from database
-                            now = datetime.datetime.now(self.tz)
-                            range_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                            range_end = range_start + datetime.timedelta(days=7)
-                            schedule_sections = self.format_weekly_schedule_message(events, range_start, range_end)
-                            for section in schedule_sections:
-                                self.send_telegram_message(section, chat_id=chat_id, count_as_reminder=False)
-                        else:
-                            self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
-                    else:
-                        # Fallback to single-user mode
-                        try:
-                            service = self._get_calendar_service()
-                            events, range_start, range_end = self.get_weekly_events(service)
-                            schedule_sections = self.format_weekly_schedule_message(events, range_start, range_end)
-                            for section in schedule_sections:
-                                self.send_telegram_message(section, chat_id=chat_id, count_as_reminder=False)
-                        except Exception as e:
-                            print(f"❌ Error preparing weekly schedule: {e}")
-                            error_msg = "❌ <b>Gagal memuat jadwal.</b>\nSilakan coba lagi nanti."
-                            self.send_telegram_message(error_msg, chat_id=chat_id, count_as_reminder=False)
-
-                # Multi-user commands
-                elif command == '/login':
-                    if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_login(chat_id, command_text.split())
-                        self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
-                elif command == '/logout':
-                    if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_logout(chat_id)
-                        self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
-
-                # Admin commands
-                elif command == '/admin_add_user':
-                    if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_admin_add_user(chat_id, command_text.split())
-                        self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
-                elif command == '/admin_list_users':
-                    if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_admin_list_users(chat_id)
-                        self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
-                elif command == '/admin_import_schedule':
-                    if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_admin_import_schedule(chat_id, command_text.split())
-                        self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
-                elif command == '/admin_delete_user':
-                    if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_admin_delete_user(chat_id, command_text.split())
-                        self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
+                    try:
+                        service = self._get_calendar_service()
+                        events, range_start, range_end = self.get_weekly_events(service)
+                        schedule_sections = self.format_weekly_schedule_message(events, range_start, range_end)
+                        for section in schedule_sections:
+                            self.send_telegram_message(
+                                section,
+                                chat_id=chat_id,
+                                count_as_reminder=False
+                            )
+                    except Exception as e:
+                        print(f"❌ Error preparing weekly schedule: {e}")
+                        error_msg = (
+                            "❌ <b>Gagal memuat jadwal.</b>\n"
+                            "Silakan coba lagi nanti atau jalankan ulang autentikasi."
+                        )
+                        self.send_telegram_message(
+                            error_msg,
+                            chat_id=chat_id,
+                            count_as_reminder=False
+                        )
                 else:
                     print(f"ℹ️  Unhandled command/text from {chat_id}: {text}")
         except requests.Timeout as e:
