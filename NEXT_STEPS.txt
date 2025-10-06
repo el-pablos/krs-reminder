@@ -1,0 +1,67 @@
+🚀 LANGKAH SELANJUTNYA
+
+Bot sudah di-fix! Sekarang tinggal:
+
+1️⃣ Generate Token Baru
+   
+   python3 scripts/auth/auth_final.py
+   
+   → Copy URL yang muncul
+   → Buka di browser
+   → Login dengan: tamskun29@gmail.com
+   → Allow
+   → Copy FULL URL error (http://localhost/?code=...)
+   → Paste di terminal
+   → Done! ✅
+
+2️⃣ Start Bot
+   
+   ./botctl.sh start
+   
+   Bot akan:
+   - Connect ke Google Calendar ✅
+   - Fetch events (today + 36h) ✅
+   - Schedule ALL reminders ✅
+   - Show detailed logs ✅
+
+3️⃣ Monitor Logs
+   
+   ./botctl.sh logs
+   
+   Atau check status:
+   
+   ./botctl.sh status
+
+4️⃣ Test /stats Command
+   
+   Kirim /stats di Telegram bot
+   Lihat statistik & monitoring
+
+═══════════════════════════════════════
+
+🔧 FIXES APPLIED:
+
+✅ Fixed: Cross-day reminder detection
+   Bot sekarang fetch 36h ahead (cover besok juga)
+
+✅ Fixed: Better error handling
+   Clear messages + auto-recovery
+
+✅ Fixed: Detailed logging
+   See exactly what's scheduled when
+
+✅ Removed: Expired token
+
+═══════════════════════════════════════
+
+📝 QUICK COMMANDS:
+
+./botctl.sh start    - Start bot
+./botctl.sh stop     - Stop bot
+./botctl.sh restart  - Restart bot
+./botctl.sh status   - Check status
+./botctl.sh logs     - View logs
+
+═══════════════════════════════════════
+
+Need help? Check README.md

@@ -1,0 +1,95 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Credentials & Secrets
+*.env
+.env
+.env.local
+.env.*.local
+configs/credentials/*.json
+configs/credentials/token.json
+configs/credentials/credentials.json
+configs/telegram/config.json
+configs/supabase/config.json
+!configs/credentials/.gitkeep
+!configs/telegram/.gitkeep
+!configs/supabase/.gitkeep
+
+# Supabase credentials (keep structure file only)
+configs/credentials/supabase
+!configs/credentials/supabase/.gitkeep
+
+# Logs
+*.log
+var/log/
+var/run/
+var/backup_admin_schedule.json
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Project specific
+nohup.out
+bot.pid
+
+# Old credentials (legacy)
+credentials.json
+token.json
+tele.txt
+credentials
+telegram

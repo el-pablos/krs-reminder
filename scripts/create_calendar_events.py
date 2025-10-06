@@ -1,0 +1,230 @@
+"""
+Script untuk membuat event kuliah di Google Calendar
+Berdasarkan jadwal KRS semester 1 2025/2026
+"""
+
+import datetime
+from pathlib import Path
+
+import pytz
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
+from scripts._bootstrap import bootstrap
+
+bootstrap()
+
+from krs_reminder import config  # noqa: E402
+
+
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+TOKEN_FILE: Path = config.TOKEN_WRITE_FILE
+
+# Jadwal Kuliah dari KRS
+JADWAL_KULIAH = [
+    {
+        'nama': 'Rekayasa Perangkat Lunak',
+        'dosen': 'Moch. Firmansyah',
+        'lokasi': 'D.404 VB',
+        'hari': 0,  # Senin
+        'jam_mulai': '13:30',
+        'jam_selesai': '15:10',
+        'kode': 'SIF255430'
+    },
+    {
+        'nama': 'Simulasi Pemodelan',
+        'dosen': 'Asrul Sani',
+        'lokasi': 'E.CYBER 1.03 VB',
+        'hari': 1,  # Selasa
+        'jam_mulai': '13:30',
+        'jam_selesai': '15:10',
+        'kode': 'SIF255432'
+    },
+    {
+        'nama': 'Kecerdasan Artifisial',
+        'dosen': 'Panca Dewi Pamungkasari',
+        'lokasi': 'Lab. Data Monetize',
+        'hari': 2,  # Rabu
+        'jam_mulai': '09:50',
+        'jam_selesai': '11:30',
+        'kode': 'SIF255428'
+    },
+    {
+        'nama': 'Analitik dan Manajemen Big Data',
+        'dosen': 'Agus Iskandar',
+        'lokasi': 'Lab. Artificial Intelligen',
+        'hari': 2,  # Rabu
+        'jam_mulai': '13:30',
+        'jam_selesai': '15:10',
+        'kode': 'SIF255427'
+    },
+    {
+        'nama': 'Riset Operasional',
+        'dosen': 'Ira Diana Sholihati',
+        'lokasi': 'D.101 VB',
+        'hari': 2,  # Rabu
+        'jam_mulai': '15:20',
+        'jam_selesai': '17:00',
+        'kode': 'SIF255431'
+    },
+    {
+        'nama': 'Cloud Computing',
+        'dosen': 'Erina Rahmazani',
+        'lokasi': 'Lab. Artificial Intelligen',
+        'hari': 3,  # Kamis
+        'jam_mulai': '11:40',
+        'jam_selesai': '13:20',
+        'kode': 'SIF257442'
+    },
+    {
+        'nama': 'Testing dan Implementasi Sistem',
+        'dosen': 'Mohammad Aldinugroho A',
+        'lokasi': 'D.304 VB',
+        'hari': 4,  # Jumat
+        'jam_mulai': '08:00',
+        'jam_selesai': '09:40',
+        'kode': 'SIF253417'
+    },
+    {
+        'nama': 'Pengolahan Citra',
+        'dosen': 'Panca Dewi Pamungkasari',
+        'lokasi': 'D.101 VB',
+        'hari': 4,  # Jumat
+        'jam_mulai': '09:50',
+        'jam_selesai': '11:30',
+        'kode': 'SIF253418'
+    }
+]
+
+def authenticate():
+    """Autentikasi dengan write access ke Calendar"""
+    creds = None
+
+    TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    if TOKEN_FILE.exists():
+        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                str(config.CREDENTIALS_FILE), SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+
+        with TOKEN_FILE.open('w', encoding='utf-8') as token:
+            token.write(creds.to_json())
+
+    return creds
+
+def get_next_weekday(weekday, start_date=None):
+    """Get tanggal untuk hari tertentu minggu ini atau minggu depan"""
+    if start_date is None:
+        start_date = datetime.datetime.now(pytz.timezone('Asia/Jakarta'))
+
+    days_ahead = weekday - start_date.weekday()
+    if days_ahead < 0:  # Target hari sudah lewat minggu ini
+        days_ahead += 7
+
+    return start_date + datetime.timedelta(days=days_ahead)
+
+def create_recurring_event(service, kuliah, num_weeks=16):
+    """Buat recurring event untuk satu semester (16 minggu)"""
+    tz = pytz.timezone('Asia/Jakarta')
+
+    # Hitung tanggal mulai (hari kuliah terdekat)
+    start_date = get_next_weekday(kuliah['hari'])
+
+    # Parse waktu
+    start_time = datetime.datetime.strptime(kuliah['jam_mulai'], '%H:%M').time()
+    end_time = datetime.datetime.strptime(kuliah['jam_selesai'], '%H:%M').time()
+
+    # Combine date dan time
+    start_datetime = tz.localize(datetime.datetime.combine(start_date.date(), start_time))
+    end_datetime = tz.localize(datetime.datetime.combine(start_date.date(), end_time))
+
+    # Hitung tanggal akhir recurrence (16 minggu ke depan)
+    until_date = start_date + datetime.timedelta(weeks=num_weeks)
+    until_str = until_date.strftime('%Y%m%d')
+
+    # Deskripsi event
+    description = f"""📚 Mata Kuliah: {kuliah['nama']}
+👨‍🏫 Dosen: {kuliah['dosen']}
+🔢 Kode: {kuliah['kode']}
+📍 Lokasi: {kuliah['lokasi']}
+⏰ Waktu: {kuliah['jam_mulai']} - {kuliah['jam_selesai']} WIB
+
+🎓 Semester 1 - TA 2025/2026
+📅 Auto-generated by KRS Reminder Bot
+"""
+
+    event = {
+        'summary': f"📚 {kuliah['nama']}",
+        'location': kuliah['lokasi'],
+        'description': description,
+        'start': {
+            'dateTime': start_datetime.isoformat(),
+            'timeZone': 'Asia/Jakarta',
+        },
+        'end': {
+            'dateTime': end_datetime.isoformat(),
+            'timeZone': 'Asia/Jakarta',
+        },
+        'recurrence': [
+            f'RRULE:FREQ=WEEKLY;COUNT={num_weeks}'  # 16 minggu
+        ],
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+                {'method': 'popup', 'minutes': 60},  # 1 jam sebelum
+                {'method': 'popup', 'minutes': 180},  # 3 jam sebelum
+            ],
+        },
+        'colorId': '9',  # Blue color
+    }
+
+    try:
+        created_event = service.events().insert(calendarId='primary', body=event).execute()
+        print(f"✅ Created: {kuliah['nama']} ({kuliah['jam_mulai']}) - {created_event.get('htmlLink')}")
+        return created_event
+    except Exception as e:
+        print(f"❌ Error creating {kuliah['nama']}: {e}")
+        return None
+
+def main():
+    print("="*60)
+    print("📅 MEMBUAT EVENT KULIAH DI GOOGLE CALENDAR")
+    print("="*60)
+    print(f"📚 Total: {len(JADWAL_KULIAH)} mata kuliah")
+    print(f"📆 Recurring: 16 minggu (1 semester)")
+    print("="*60)
+
+    # Authenticate
+    print("\n🔐 Authenticating Google Calendar...")
+    creds = authenticate()
+    service = build('calendar', 'v3', credentials=creds)
+
+    # Create events
+    print("\n📝 Creating events...\n")
+    created_count = 0
+
+    for kuliah in JADWAL_KULIAH:
+        hari_nama = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'][kuliah['hari']]
+        print(f"📌 {hari_nama} {kuliah['jam_mulai']}: {kuliah['nama']}")
+
+        event = create_recurring_event(service, kuliah)
+        if event:
+            created_count += 1
+
+    print("\n" + "="*60)
+    print(f"✅ SELESAI! {created_count}/{len(JADWAL_KULIAH)} event berhasil dibuat")
+    print("="*60)
+    print("\n📱 Cek Google Calendar Anda untuk melihat jadwal kuliah!")
+    print("🔔 Reminder Bot akan otomatis detect event dan kirim notifikasi\n")
+
+if __name__ == "__main__":
+    main()
