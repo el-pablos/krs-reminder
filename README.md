@@ -1,12 +1,22 @@
 # 🎓 KRS REMINDER BOT
 
-> **Sistem Reminder Multi-Jam untuk Kuliah via Telegram + Google Calendar dengan VA/VB System & Interactive Buttons**
+> **Sistem Reminder Multi-Jam untuk Kuliah via Telegram + Google Calendar dengan Multi-User Support, VA/VB System & Interactive Buttons**
 
-Bot otomatis yang mengirim notifikasi Telegram untuk jadwal kuliah dengan format premium, terintegrasi dengan Google Calendar, dan dilengkapi dengan sistem VA/VB (Virtual Attendance / Virtual Blended) untuk menentukan mode perkuliahan (online/onsite).
+Bot otomatis yang mengirim notifikasi Telegram untuk jadwal kuliah dengan format premium, terintegrasi dengan Google Calendar dan Supabase Database, dilengkapi dengan sistem multi-user, authentication, dan VA/VB (Virtual Attendance / Virtual Blended) untuk menentukan mode perkuliahan (online/onsite).
 
 **Bot Telegram:** [@krs_reminderbot](https://t.me/krs_reminderbot)
 
-**Status:** ✅ Production Ready | **Version:** V2 with VA/VB & Interactive Buttons | **Test Results:** 4/4 PASSED
+**Status:** ✅ Production Ready | **Version:** V3 Multi-User | **Test Results:** 5/5 PASSED
+
+## 🆕 What's New in V3
+
+- ✅ **Multi-User Support** - Multiple users can use the bot simultaneously
+- ✅ **User Authentication** - Secure login with secret key (bcrypt)
+- ✅ **Session Management** - 24-hour sessions with auto-expiry
+- ✅ **Database Backend** - Supabase PostgreSQL for data persistence
+- ✅ **Admin Panel** - User management, schedule import, and more
+- ✅ **Role-Based Access** - Admin and user roles with different permissions
+- ✅ **Privacy Isolation** - Each user only sees their own schedules
 
 ---
 
@@ -212,8 +222,10 @@ Klik "📆 Lihat Jadwal - Harian" untuk pilih hari:
 
 ### Prerequisites
 
-- Python 3.7+
+- Python 3.10+
 - Google Calendar API credentials
+- Supabase account (for multi-user support)
+- Telegram Bot Token
 - Telegram Bot Token
 
 ### Installation Steps
