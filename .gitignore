@@ -37,11 +37,14 @@ env/
 *~
 .DS_Store
 
-# Credentials & Secrets
+# Credentials & Secrets (CRITICAL - DO NOT COMMIT)
 *.env
 .env
 .env.local
 .env.*.local
+*.key
+*.token
+*.secret
 configs/credentials/*.json
 configs/credentials/token.json
 configs/credentials/credentials.json
@@ -55,11 +58,19 @@ configs/supabase/config.json
 configs/credentials/supabase
 !configs/credentials/supabase/.gitkeep
 
-# Logs
+# Database & API Keys
+*.db
+*.sqlite
+*.sqlite3
+database.json
+api_keys.json
+
+# Logs & Runtime
 *.log
 var/log/
 var/run/
-var/backup_admin_schedule.json
+var/backup_*.json
+var/*.json
 
 # Testing
 .pytest_cache/
