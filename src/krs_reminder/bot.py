@@ -1266,19 +1266,65 @@ class KRSReminderBotV2:
             self.sent_reminders.add(reminder_key)
 
     def check_and_schedule_events(self):
-        """Check events dan schedule reminders"""
+        """Check events dan schedule reminders - Multi-user support"""
         print(f"\n🔄 Checking events... ({datetime.datetime.now(self.tz).strftime('%Y-%m-%d %H:%M:%S')})")
 
-        try:
-            service = self._get_calendar_service()
-            events = self.get_todays_events(service)
+        if self.multi_user_enabled:
+            # Multi-user mode: check all users
+            self.check_and_schedule_multiuser()
+        else:
+            # Single-user mode: use Google Calendar directly
+            try:
+                service = self._get_calendar_service()
+                events = self.get_todays_events(service)
+                if events:
+                    self.schedule_reminders(events)
+                else:
+                    print("📭 No events today")
+            except Exception as e:
+                print(f"❌ Error: {e}")
 
-            if events:
-                self.schedule_reminders(events)
+    def check_and_schedule_multiuser(self):
+        """Check and schedule reminders for all users"""
+        try:
+            users = self.db.list_all_users()
+            print(f"👥 Checking {len(users)} users...")
+
+            now = datetime.datetime.now(self.tz)
+            end_time = now + datetime.timedelta(hours=36)
+
+            total_events = 0
+            for user in users:
+                # Get user's schedules
+                schedules = self.db.get_user_schedules(user['user_id'], now, end_time)
+
+                if schedules:
+                    print(f"  👤 {user['username']}: {len(schedules)} events")
+                    # Convert to event format
+                    events = self.cmd_handler._schedules_to_events(schedules)
+                    # Schedule reminders with user context
+                    self.schedule_reminders_for_user(events, user)
+                    total_events += len(schedules)
+
+            if total_events == 0:
+                print("📭 No events for any user")
             else:
-                print("📭 No events today")
+                print(f"✅ Processed {total_events} events")
+
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error in multi-user scheduling: {e}")
+
+    def schedule_reminders_for_user(self, events, user):
+        """Schedule reminders for a specific user"""
+        # Get user's active session to get chat_id
+        sessions = self.db.get_active_session(user.get('telegram_chat_id', 0))
+        if not sessions:
+            print(f"  ⚠️  No active session for {user['username']}")
+            return
+
+        # Use existing schedule_reminders but with user context
+        # For now, just use the default scheduling
+        self.schedule_reminders(events)
 
     def start(self):
         """Start bot"""
