@@ -99,33 +99,42 @@ class CommandHandler:
                 "Contoh: <code>/login rahasia123</code>"
             )
         
-        secret_key = args[1]
-        
+        secret_key = args[1].strip()
+
         # Check if already logged in
         existing_session = self.auth.validate_session(chat_id)
         if existing_session:
             user = self.db.get_user_by_id(existing_session['user_id'])
             return f"⚠️  Anda sudah login sebagai <b>{user['username']}</b>"
-        
-        # Try to login (username is secret_key for now, will be improved)
-        # For now, we'll search for user by secret_key hash
+
+        # Try to login - search for user by secret_key hash
         users = self.db.list_all_users()
-        
+
+        matched_user = None
         for user in users:
+            # Verify secret key (correct argument order: plain_text, hash)
             if self.auth.verify_secret_key(secret_key, user['secret_key_hash']):
-                # Create session
-                result = self.auth.login(user['username'], secret_key, chat_id)
-                if result['success']:
-                    return (
-                        f"✅ <b>Login Berhasil!</b>\n\n"
-                        f"👤 Username: <b>{result['username']}</b>\n"
-                        f"🔑 Session aktif selama 24 jam\n\n"
-                        f"Gunakan /jadwal untuk melihat jadwal Anda"
-                    )
-                else:
-                    return result['message']
-        
-        return "❌ Secret key tidak valid"
+                matched_user = user
+                break
+
+        if not matched_user:
+            return (
+                "❌ <b>Secret key tidak valid</b>\n\n"
+                "Pastikan Anda memasukkan secret key yang benar.\n"
+                "Hubungi admin jika Anda lupa secret key Anda."
+            )
+
+        # Create session
+        result = self.auth.login(matched_user['username'], secret_key, chat_id)
+        if result['success']:
+            return (
+                f"✅ <b>Login Berhasil!</b>\n\n"
+                f"👤 Username: <b>{result['username']}</b>\n"
+                f"🔑 Session aktif selama 24 jam\n\n"
+                f"Gunakan /jadwal untuk melihat jadwal Anda"
+            )
+        else:
+            return result['message']
     
     def handle_logout(self, chat_id: int) -> str:
         """Handle /logout"""

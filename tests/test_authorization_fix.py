@@ -47,6 +47,10 @@ class MockBot:
         # Mock timezone
         self.tz = pytz.timezone('Asia/Jakarta')
 
+    def _notify_admin_unauthorized_access(self, chat_id: int, action: str):
+        """Mock admin notification"""
+        print(f"   📧 Admin notification: chat_id={chat_id}, action={action}")
+
 
 def test_unauthenticated_start():
     """Test /start command for unauthenticated user"""
@@ -116,9 +120,9 @@ def test_unauthenticated_jadwal():
     
     # Verify access denied
     assert not success, "❌ Should return False for unauthenticated user"
-    assert "belum login" in msg.lower(), "❌ Should show 'belum login' error"
+    assert ("belum login" in msg.lower() or "belum terdaftar" in msg.lower()), "❌ Should show authentication error"
     assert len(events) == 0, "❌ Should return empty events list"
-    
+
     print("✅ PASS: Unauthenticated user cannot access /jadwal")
 
 

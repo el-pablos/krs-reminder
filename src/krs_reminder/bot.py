@@ -935,15 +935,40 @@ class KRSReminderBotV2:
             if data == 'jadwal_weekly':
                 # Show weekly schedule
                 print(f"📅 Weekly schedule requested from {chat_id}")
-                service = self._get_calendar_service()
-                events, range_start, range_end = self.get_weekly_events(service)
-                schedule_sections = self.format_weekly_schedule_message(events, range_start, range_end)
-                for section in schedule_sections:
-                    self.send_telegram_message(
-                        section,
-                        chat_id=chat_id,
-                        count_as_reminder=False
-                    )
+
+                # Use multi-user database if enabled
+                if self.multi_user_enabled and self.cmd_handler:
+                    success, msg, events = self.cmd_handler.handle_jadwal_multiuser(chat_id)
+                    if success and events:
+                        # Format and send schedule
+                        now = datetime.datetime.now(self.tz)
+                        range_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                        range_end = range_start + datetime.timedelta(days=7)
+                        schedule_sections = self.format_weekly_schedule_message(events, range_start, range_end)
+                        for section in schedule_sections:
+                            self.send_telegram_message(
+                                section,
+                                chat_id=chat_id,
+                                count_as_reminder=False
+                            )
+                    else:
+                        # Send error message
+                        self.send_telegram_message(
+                            msg if msg else "❌ Gagal memuat jadwal",
+                            chat_id=chat_id,
+                            count_as_reminder=False
+                        )
+                else:
+                    # Fallback to Google Calendar (legacy mode)
+                    service = self._get_calendar_service()
+                    events, range_start, range_end = self.get_weekly_events(service)
+                    schedule_sections = self.format_weekly_schedule_message(events, range_start, range_end)
+                    for section in schedule_sections:
+                        self.send_telegram_message(
+                            section,
+                            chat_id=chat_id,
+                            count_as_reminder=False
+                        )
 
             elif data == 'jadwal_daily_menu':
                 # Show daily menu with day buttons
@@ -981,15 +1006,35 @@ class KRSReminderBotV2:
                         days_ahead = 0  # Today if it's the same day
                     target_date = now + datetime.timedelta(days=days_ahead)
 
-                    service = self._get_calendar_service()
-                    events, _, _ = self.get_weekly_events(service)
-                    daily_msg = self.format_daily_schedule_message(events, target_date)
-                    self.send_telegram_message(
-                        daily_msg,
-                        chat_id=chat_id,
-                        reply_markup=self._create_daily_menu_keyboard(),
-                        count_as_reminder=False
-                    )
+                    # Use multi-user database if enabled
+                    if self.multi_user_enabled and self.cmd_handler:
+                        success, msg, events = self.cmd_handler.handle_jadwal_multiuser(chat_id)
+                        if success and events:
+                            daily_msg = self.format_daily_schedule_message(events, target_date)
+                            self.send_telegram_message(
+                                daily_msg,
+                                chat_id=chat_id,
+                                reply_markup=self._create_daily_menu_keyboard(),
+                                count_as_reminder=False
+                            )
+                        else:
+                            self.send_telegram_message(
+                                msg if msg else "❌ Gagal memuat jadwal",
+                                chat_id=chat_id,
+                                reply_markup=self._create_daily_menu_keyboard(),
+                                count_as_reminder=False
+                            )
+                    else:
+                        # Fallback to Google Calendar (legacy mode)
+                        service = self._get_calendar_service()
+                        events, _, _ = self.get_weekly_events(service)
+                        daily_msg = self.format_daily_schedule_message(events, target_date)
+                        self.send_telegram_message(
+                            daily_msg,
+                            chat_id=chat_id,
+                            reply_markup=self._create_daily_menu_keyboard(),
+                            count_as_reminder=False
+                        )
 
             elif data == 'stats':
                 # Show stats
@@ -1409,16 +1454,19 @@ class KRSReminderBotV2:
             last_name = user_info.get('last_name', '')
             full_name = f"{first_name} {last_name}".strip()
 
-            # Get admin's telegram_id
-            admin_users = self.db.list_all_users()
-            admin_telegram_id = None
-            for u in admin_users:
-                if self.admin.is_admin(u['user_id']):
-                    admin_telegram_id = u.get('telegram_id')
-                    break
+            # Get admin's telegram_chat_id from admins table
+            try:
+                admins = self.db._request('GET', 'admins', params={'limit': '1'})
+                if not admins:
+                    print(f"⚠️  Cannot notify admin: no admins found in database")
+                    return
 
-            if not admin_telegram_id:
-                print(f"⚠️  Cannot notify admin: admin telegram_id not found")
+                admin_telegram_id = admins[0].get('telegram_chat_id')
+                if not admin_telegram_id:
+                    print(f"⚠️  Cannot notify admin: admin telegram_chat_id not found")
+                    return
+            except Exception as e:
+                print(f"⚠️  Cannot notify admin: error fetching admin - {e}")
                 return
 
             # Send notification to admin

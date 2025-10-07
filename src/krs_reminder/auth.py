@@ -270,7 +270,7 @@ class AuthManager:
         if user:
             return (True, user, '')
         else:
-            return (False, None, '❌ Anda belum login. Gunakan /login <secret_key>')
+            return (False, None, '❌ Anda belum login. Gunakan /login &lt;secret_key&gt;')
 
     def is_user_authenticated(self, telegram_chat_id: int) -> bool:
         """
