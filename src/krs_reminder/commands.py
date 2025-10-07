@@ -7,13 +7,38 @@ from typing import Dict, Optional
 
 class CommandHandler:
     """Handle user and admin commands"""
-    
+
     def __init__(self, bot):
         self.bot = bot
         self.db = bot.db
         self.auth = bot.auth
         self.admin = bot.admin
-    
+
+    # ============================================================
+    # HELPER METHODS
+    # ============================================================
+
+    def _get_onboarding_message(self) -> str:
+        """
+        Get onboarding message for unauthenticated users
+
+        Returns:
+            Formatted onboarding message
+        """
+        return (
+            "❌ <b>Anda belum terdaftar di sistem.</b>\n\n"
+            "📋 <b>Untuk menggunakan bot ini:</b>\n\n"
+            "1️⃣ Kirim jadwal kuliah Anda ke admin: @el_pablos\n"
+            "2️⃣ Admin akan menambahkan Anda ke database\n"
+            "3️⃣ Anda akan menerima <b>secret key</b> untuk login\n"
+            "4️⃣ Login dengan command:\n"
+            "     <code>/login &lt;secret_key&gt;</code>\n\n"
+            "━━━━━━━━━━━━━━━━━━━\n\n"
+            "📧 <b>Hubungi admin untuk registrasi:</b> @el_pablos\n\n"
+            "ℹ️ Bot ini menggunakan sistem multi-user dengan autentikasi "
+            "untuk menjaga privasi jadwal setiap user."
+        )
+
     # ============================================================
     # USER COMMANDS
     # ============================================================
@@ -125,11 +150,17 @@ class CommandHandler:
         """
         if not self.bot.multi_user_enabled:
             return (False, "Multi-user disabled", [])
-        
+
         # Check if logged in
         is_logged_in, user, error_msg = self.auth.require_login(chat_id)
         if not is_logged_in:
-            return (False, error_msg, [])
+            # Send improved onboarding message
+            onboarding_msg = self._get_onboarding_message()
+
+            # Notify admin about unauthorized access
+            self.bot._notify_admin_unauthorized_access(chat_id, "Command: /jadwal")
+
+            return (False, onboarding_msg, [])
         
         # Get schedules from database
         now = datetime.datetime.now(self.bot.tz)

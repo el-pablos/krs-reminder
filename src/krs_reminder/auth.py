@@ -214,12 +214,25 @@ class AuthManager:
         
         if not session:
             return None
-        
+
         # Check if session is expired
-        expires_at = datetime.fromisoformat(session['expires_at'].replace('Z', '+00:00'))
-        if datetime.utcnow() > expires_at.replace(tzinfo=None):
-            # Session expired, invalidate it
-            self.db.invalidate_session(session['session_id'])
+        try:
+            # Handle Supabase timestamp format (may have 5 or 6 digit microseconds)
+            expires_at_str = session['expires_at'].replace('Z', '+00:00')
+            # Normalize microseconds to 6 digits
+            if '.' in expires_at_str and '+' in expires_at_str:
+                parts = expires_at_str.split('.')
+                microseconds_and_tz = parts[1].split('+')
+                microseconds = microseconds_and_tz[0].ljust(6, '0')[:6]  # Pad or truncate to 6 digits
+                expires_at_str = f"{parts[0]}.{microseconds}+{microseconds_and_tz[1]}"
+
+            expires_at = datetime.fromisoformat(expires_at_str)
+            if datetime.utcnow() > expires_at.replace(tzinfo=None):
+                # Session expired, invalidate it
+                self.db.invalidate_session(session['session_id'])
+                return None
+        except (ValueError, IndexError) as e:
+            print(f"⚠️  Error parsing session expiry: {e}")
             return None
         
         return session

@@ -906,6 +906,31 @@ class KRSReminderBotV2:
         # Answer the callback query immediately to remove loading state
         self.answer_callback_query(callback_id)
 
+        # Check authentication for schedule-related callbacks in multi-user mode
+        schedule_callbacks = ['jadwal_weekly', 'jadwal_daily_menu', 'stats']
+        if self.multi_user_enabled and (data in schedule_callbacks or data.startswith('day_')):
+            if not self.auth:
+                self.send_telegram_message(
+                    "❌ Multi-user support tidak tersedia",
+                    chat_id=chat_id,
+                    count_as_reminder=False
+                )
+                return
+
+            # Check if user is logged in
+            is_logged_in, user, error_msg = self.auth.require_login(chat_id)
+            if not is_logged_in:
+                # User not authenticated - send error message
+                self.send_telegram_message(
+                    error_msg,
+                    chat_id=chat_id,
+                    count_as_reminder=False
+                )
+
+                # Notify admin about unauthorized access attempt
+                self._notify_admin_unauthorized_access(chat_id, f"Button: {data}")
+                return
+
         try:
             if data == 'jadwal_weekly':
                 # Show weekly schedule
@@ -1351,6 +1376,73 @@ class KRSReminderBotV2:
         # Use existing schedule_reminders but with user context
         # For now, just use the default scheduling
         self.schedule_reminders(events)
+
+    def _notify_admin_unauthorized_access(self, chat_id: int, action: str):
+        """
+        Notify admin when an unauthorized user attempts to access the bot
+
+        Args:
+            chat_id: Telegram chat ID of the unauthorized user
+            action: Action attempted (e.g., "Command: /jadwal", "Button: jadwal_weekly")
+        """
+        if not self.multi_user_enabled or not self.admin:
+            return
+
+        try:
+            # Get user info from Telegram
+            url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/getChat"
+            response = self.http_session.get(url, params={'chat_id': chat_id}, timeout=5)
+
+            user_info = {}
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok'):
+                    chat_data = data.get('result', {})
+                    user_info = {
+                        'username': chat_data.get('username', 'N/A'),
+                        'first_name': chat_data.get('first_name', 'N/A'),
+                        'last_name': chat_data.get('last_name', ''),
+                    }
+
+            username = user_info.get('username', 'N/A')
+            first_name = user_info.get('first_name', 'N/A')
+            last_name = user_info.get('last_name', '')
+            full_name = f"{first_name} {last_name}".strip()
+
+            # Get admin's telegram_id
+            admin_users = self.db.list_all_users()
+            admin_telegram_id = None
+            for u in admin_users:
+                if self.admin.is_admin(u['user_id']):
+                    admin_telegram_id = u.get('telegram_id')
+                    break
+
+            if not admin_telegram_id:
+                print(f"⚠️  Cannot notify admin: admin telegram_id not found")
+                return
+
+            # Send notification to admin
+            notification_msg = (
+                "🔔 <b>User Tidak Terdaftar Mencoba Akses Bot</b>\n\n"
+                f"👤 <b>Nama:</b> {full_name}\n"
+                f"🆔 <b>Username:</b> @{username if username != 'N/A' else 'tidak ada'}\n"
+                f"💬 <b>Chat ID:</b> <code>{chat_id}</code>\n"
+                f"📝 <b>Aksi:</b> {action}\n\n"
+                "━━━━━━━━━━━━━━━━━━━\n\n"
+                "💡 <b>Tambahkan user dengan:</b>\n"
+                f"<code>/admin_add_user {username if username != 'N/A' else 'username'}</code>"
+            )
+
+            self.send_telegram_message(
+                notification_msg,
+                chat_id=admin_telegram_id,
+                count_as_reminder=False
+            )
+
+            print(f"✅ Admin notified about unauthorized access from {chat_id}")
+
+        except Exception as e:
+            print(f"⚠️  Failed to notify admin about unauthorized access: {e}")
 
     def start(self):
         """Start bot"""
