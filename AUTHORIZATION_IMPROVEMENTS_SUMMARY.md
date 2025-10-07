@@ -90,13 +90,13 @@ def _get_onboarding_message(self) -> str:
     return (
         "❌ <b>Anda belum terdaftar di sistem.</b>\n\n"
         "📋 <b>Untuk menggunakan bot ini:</b>\n\n"
-        "1️⃣ Kirim jadwal kuliah Anda ke admin: @el_pablos\n"
+        "1️⃣ Kirim jadwal kuliah Anda ke admin: @ImTamaa\n"
         "2️⃣ Admin akan menambahkan Anda ke database\n"
         "3️⃣ Anda akan menerima <b>secret key</b> untuk login\n"
         "4️⃣ Login dengan command:\n"
         "     <code>/login &lt;secret_key&gt;</code>\n\n"
         "━━━━━━━━━━━━━━━━━━━\n\n"
-        "📧 <b>Hubungi admin untuk registrasi:</b> @el_pablos\n\n"
+        "📧 <b>Hubungi admin untuk registrasi:</b> @ImTamaa\n\n"
         "ℹ️ Bot ini menggunakan sistem multi-user dengan autentikasi "
         "untuk menjaga privasi jadwal setiap user."
     )
@@ -202,12 +202,12 @@ python3 scripts/update_admin_secret_key.py
    ❌ Anda belum terdaftar di sistem.
    
    📋 Untuk menggunakan bot ini:
-   1️⃣ Kirim jadwal kuliah Anda ke admin: @el_pablos
+   1️⃣ Kirim jadwal kuliah Anda ke admin: @ImTamaa
    2️⃣ Admin akan menambahkan Anda ke database
    3️⃣ Anda akan menerima secret key untuk login
    4️⃣ Login dengan: /login <secret_key>
    
-   📧 Hubungi admin untuk registrasi: @el_pablos
+   📧 Hubungi admin untuk registrasi: @ImTamaa
    ```
 3. Admin receives notification:
    ```

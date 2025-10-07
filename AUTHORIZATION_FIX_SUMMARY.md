@@ -156,7 +156,7 @@ All tests PASSED ✅
    3️⃣ Login dengan command: /login <secret_key>
    4️⃣ Setelah login, Anda bisa melihat jadwal Anda
    
-   📧 Kontak Admin: @el_pablos
+   📧 Kontak Admin: @ImTamaa
    ```
 3. User contacts admin
 4. Admin creates account: `/admin_add_user username`

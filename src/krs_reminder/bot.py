@@ -1247,7 +1247,8 @@ class KRSReminderBotV2:
                 # Multi-user commands
                 elif command == '/login':
                     if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_login(chat_id, command_text.split())
+                        # Use full text for argument parsing, not just command_text
+                        msg = self.cmd_handler.handle_login(chat_id, text.split())
                         self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
                 elif command == '/logout':
                     if self.multi_user_enabled and self.cmd_handler:
@@ -1257,7 +1258,8 @@ class KRSReminderBotV2:
                 # Admin commands
                 elif command == '/admin_add_user':
                     if self.multi_user_enabled and self.cmd_handler:
-                        msg = self.cmd_handler.handle_admin_add_user(chat_id, command_text.split())
+                        # Use full text for argument parsing, not just command_text
+                        msg = self.cmd_handler.handle_admin_add_user(chat_id, text.split())
                         self.send_telegram_message(msg, chat_id=chat_id, count_as_reminder=False)
                 elif command == '/admin_list_users':
                     if self.multi_user_enabled and self.cmd_handler:

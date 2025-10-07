@@ -70,7 +70,7 @@ def test_onboarding_message():
     
     # Verify message contains key elements
     assert "belum terdaftar" in msg.lower(), "Should mention user is not registered"
-    assert "@el_pablos" in msg, "Should contain admin contact"
+    assert "@ImTamaa" in msg, "Should contain admin contact"
     assert "/login" in msg, "Should mention login command"
     assert "secret key" in msg.lower(), "Should mention secret key"
     

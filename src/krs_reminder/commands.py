@@ -28,13 +28,13 @@ class CommandHandler:
         return (
             "❌ <b>Anda belum terdaftar di sistem.</b>\n\n"
             "📋 <b>Untuk menggunakan bot ini:</b>\n\n"
-            "1️⃣ Kirim jadwal kuliah Anda ke admin: @el_pablos\n"
+            "1️⃣ Kirim jadwal kuliah Anda ke admin: @ImTamaa\n"
             "2️⃣ Admin akan menambahkan Anda ke database\n"
             "3️⃣ Anda akan menerima <b>secret key</b> untuk login\n"
             "4️⃣ Login dengan command:\n"
             "     <code>/login &lt;secret_key&gt;</code>\n\n"
             "━━━━━━━━━━━━━━━━━━━\n\n"
-            "📧 <b>Hubungi admin untuk registrasi:</b> @el_pablos\n\n"
+            "📧 <b>Hubungi admin untuk registrasi:</b> @ImTamaa\n\n"
             "ℹ️ Bot ini menggunakan sistem multi-user dengan autentikasi "
             "untuk menjaga privasi jadwal setiap user."
         )
@@ -82,7 +82,7 @@ class CommandHandler:
                 "     <code>/login &lt;secret_key&gt;</code>\n"
                 "4️⃣ Setelah login, Anda bisa melihat jadwal Anda\n\n"
                 "━━━━━━━━━━━━━━━━━━━\n\n"
-                "📧 <b>Kontak Admin:</b> @el_pablos\n\n"
+                "📧 <b>Kontak Admin:</b> @ImTamaa\n\n"
                 "ℹ️ Bot ini menggunakan sistem multi-user dengan autentikasi "
                 "untuk menjaga privasi jadwal setiap user."
             )
@@ -119,9 +119,8 @@ class CommandHandler:
 
         if not matched_user:
             return (
-                "❌ <b>Secret key tidak valid</b>\n\n"
-                "Pastikan Anda memasukkan secret key yang benar.\n"
-                "Hubungi admin jika Anda lupa secret key Anda."
+                "❌ <b>Secret key tidak ditemukan.</b>\n\n"
+                "Silahkan hubungi admin @ImTamaa"
             )
 
         # Create session
